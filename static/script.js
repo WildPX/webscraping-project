@@ -62,7 +62,7 @@ function formatResult(result, index) {
 
     // Display 'categories' next if available
     if (result.hasOwnProperty('categories')) {
-        formattedResult += '<strong>Категории:</strong> ' + result.categories.join(', ') + '<br>';
+        formattedResult += '<strong>Категории:</strong> ' + result.categories + '<br>';
     }
 
     // Display remaining fields

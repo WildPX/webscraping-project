@@ -1,61 +1,71 @@
 import json
 import os
 from elasticsearch import Elasticsearch
+from elasticsearch.helpers import bulk
 import urllib3
 
 
 # TODO: Fix this
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-DIRECTORY_PATH = "projects/ruelderscrolls/characters"
+DIRECTORY_PATH = "projects/ruelderscrolls/characters_full"
 INDEX_NAME = 'characters_index_v2'
 
 SETTINGS_MAPPING = {
     "properties": {
-        "title": {"type": "text", "analyzer": "russian"},
-        "Раса": {"type": "keyword"},
-        "Фракция": {"type": "text", "analyzer": "russian"},
-        "Локация": {"type": "text", "analyzer": "russian"},
-        "Квест": {"type": "text", "analyzer": "russian"},
-        "Услуги": {"type": "text", "analyzer": "russian"},
-        "Состояние": {"type": "text", "analyzer": "russian"},
-        "categories": {
-            "type": "nested",
-            "properties": {
-                "category": {"type": "text", "analyzer": "russian"},
-            }
+        "title": {
+            "type": "text",
+            "analyzer": "characters_analyzer"
         },
-        "text": {"type": "text", "analyzer": "russian"}
+        "Раса": {
+            "type": "keyword"
+        },
+        "Фракция": {
+            "type": "text",
+            "analyzer": "characters_analyzer"
+        },
+        "Локация": {
+            "type": "text",
+            "analyzer": "characters_analyzer"
+        },
+        "Квест": {
+            "type": "text",
+            "analyzer": "characters_analyzer"
+        },
+        "Услуги": {
+            "type": "text",
+            "analyzer": "characters_analyzer"
+        },
+        "Состояние": {
+            "type": "keyword"
+        },
+        "categories": {
+            "type": "text",
+            "analyzer": "characters_analyzer"
+        },
+        "text": {
+            "type": "text",
+            "analyzer": "characters_analyzer"
+        }
     }
 }
 
-SETTINGS_MAIN = {
-    "settings": {
-        "analysis": {
-            "analyzer": {
-                "russian": {
-                    "type": "custom",
-                    "tokenizer": "standard",
-                    "filter": ["lowercase", "russian_morphology", "russian_stop", "russian_stemmer", "russian_synonyms"]
-                },
-                "russian_typo": {
-                    "tokenizer": "standard",
-                    "filter": ["russian_typo"]
-                },
-            },
-            "filter": {
-                "russian_stop": {"type": "stop", "stopwords": "_russian_"},
-                "russian_stemmer": {"type": "stemmer", "language": "russian"},
-                "russian_synonyms": {
-                    "type": "synonym",
-                    "ignore_case": "true",
-                    "synonyms_path": "projects/ruelderscrolls/synonyms.txt"
-                },
-                "russian_typo": {
-                    "type": "phonetic",
-                    "encoder": "russian",
-                    "replace": True
-                }
+SETTINGS_MAIN = \
+{
+    "analysis": {
+        "analyzer": {
+            "characters_analyzer": {
+                "type": "custom",
+                "tokenizer": "standard",
+                "filter": ["lowercase", "russian_stop", "russian_synonyms", "russian_stemmer"]
+            }
+        },
+        "filter": {
+            "russian_stop": {"type": "stop", "stopwords": "_russian_"},
+            "russian_stemmer": {"type": "stemmer", "language": "russian"},
+            "russian_synonyms": {
+                "type": "synonym",
+                "synonyms_path": "synonyms.txt"
             }
         }
     }
@@ -68,19 +78,23 @@ def create_index():
     if not es.indices.exists(index=INDEX_NAME):
         try:
             es.indices.create(index=INDEX_NAME,
-                              body={"mappings": SETTINGS_MAPPING, "settings": SETTINGS_MAIN},
-                              ignore=400)
+                              body={"mappings": SETTINGS_MAPPING, "settings": SETTINGS_MAIN})
 
+            actions = []
             for filename in os.listdir(DIRECTORY_PATH):
                 if os.path.splitext(filename)[1] == ".json":
                     file_path = os.path.join(DIRECTORY_PATH, filename)
                     with open(file_path, 'r', encoding='utf-8') as file:
                         json_data = json.load(file)
-                        es.index(index=INDEX_NAME, body=json_data)
+                        actions.append({"_index": INDEX_NAME, "_source": json_data})
+
+            if actions:
+                response = bulk(es, actions)
+                es.indices.refresh(index=INDEX_NAME)
 
             print(f"Index \"{INDEX_NAME}\" created.")
         except Exception as e:
-            print(f"Error creating index: {e}")
+            print(f"Error creating index: {str(e)}")
     else:
         print(f"Index \"{INDEX_NAME}\" already exists.")
 
@@ -110,5 +124,6 @@ def main():
     # Step 1
     create_index()
     # Step 2
+
 
 main()

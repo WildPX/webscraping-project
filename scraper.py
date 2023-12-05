@@ -18,7 +18,7 @@ INVALID_CATEGORIES_PREFIXES = ["Необходима_замена_перевод
 START_URLS = [f"{FANDOM_SITE}/wiki/%D0%9A%D0%B0%D1%82%D0%B5%D0%B3%D0%BE%D1%80%D0%B8%D1%8F:%D0%9F%D0%B5%D1%80%D1%81%D0%BE%D0%BD%D0%B0%D0%B6%D0%B8"]
 INFOBOX_FIELDS = ["Раса", "Фракция", "Локация", "Квест", "Услуги", "Состояние"]
 
-JSON_DIRECTORY = f"projects/ruelderscrolls/characters"
+JSON_DIRECTORY = f"projects/ruelderscrolls/characters_full"
 JSON_FILE = {}
 JSON_PATH = ""
 
@@ -159,7 +159,7 @@ def scrape_page(page_name):
     # Text parsing
     paragraphs = soup.find_all('p')
     result_string = ' '.join(paragraph.get_text() for paragraph in paragraphs)
-    current_json['text'] = result_string[:512]
+    current_json['text'] = result_string
 
     save_json(current_json)
 
@@ -211,14 +211,8 @@ def main():
             get_all_pages_names(url)
     else:
         print("Found PAGES_NAMES.")
-    print(PAGES_NAMES_LIST[1000])
+    # print(PAGES_NAMES_LIST[1000])
     # Second step
-    # scrape_all_pages()
+    scrape_all_pages()
 
-# main()
-PAGES_NAMES_LIST = read_pages_from_file(PAGES_NAMES_PATH)
-def scrape_all_pages_from(index):
-    for page in range(index, len(PAGES_NAMES_LIST)):
-        scrape_page(PAGES_NAMES_LIST[page])
-
-scrape_all_pages_from(7963)
+main()
